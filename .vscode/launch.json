@@ -1,0 +1,43 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "console": "externalTerminal",
+            "request": "launch",
+            "name": "Debug executable 'rusty_rogue'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=rusty_rogue",
+                    "--package=rusty_rogue"
+                ],
+                "filter": {
+                    "name": "rusty_rogue",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}",
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'rusty_rogue'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=rusty_rogue",
+                    "--package=rusty_rogue"
+                ],
+                "filter": {
+                    "name": "rusty_rogue",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
