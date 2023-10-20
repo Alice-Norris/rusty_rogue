@@ -2,7 +2,6 @@ mod types;
 mod items;
 
 use std::{io::{self, Write}, vec, fs, path::Path};
-
 use cursive::{views::{LinearLayout, Canvas, TextView}, theme::{Theme, Palette, ColorStyle}, view::Resizable, Printer, CursiveRunnable, XY};
 use cursive::theme::BaseColor::{Black, White};
 use cursive::traits::Nameable;
@@ -14,26 +13,30 @@ use types::Item;
 use crate::types::Size;
 
 fn main() {
-    let graphics: Vec<Box<String>> = load_graphics();
+    //let graphics: Vec<Box<String>> = load_graphics();
     let mut siv = cursive::default();
-    setup_window(&mut siv, &graphics);
+    // setup_window(&mut siv, &graphics);
     let mut rng = rand::thread_rng();
+    for i in 0..50 {
+        let name = gen_name(&mut rng); 
+        println!("{name}");
+    }
     let items = create_item_data();
     let mut inventory: Vec<&Box<dyn Item>> = vec![];
     let mut state = String::from("standing in");
     let mut item_roll: Option<&Box<dyn Item>> = None;
-    // loop {
-    //     println!("You are {0} a hallway...", state);
-    //     print!("Enter a command <z = get, c = continue, x = wait, q = quit>: ");
-    //     io::stdout().flush().unwrap();
-    //     let res = process_input(&mut state, item_roll, &mut inventory);
-    //     if res == 1 {
-    //         break;
-    //     }
-    //     item_roll = gen_item(&mut rng, &items);
-    // }
+    loop {
+        println!("You are {0} a hallway...", state);
+        print!("Enter a command <z = get, c = continue, x = wait, q = quit>: ");
+        io::stdout().flush().unwrap();
+        let res = process_input(&mut state, item_roll, &mut inventory);
+        if res == 1 {
+            break;
+        }
+        item_roll = gen_item(&mut rng, &items);
+    }
 
-    siv.run();
+    //siv.run();
 }
 
 pub fn load_graphics() -> Vec<Box<String>> {
@@ -114,20 +117,36 @@ pub fn gen_name(rng: &mut ThreadRng) -> String {
     let v_digraphs = vec!["ai", "ay", "ee", "ea", "ie", "ei", "oo", "ou", "ow", "oe", "oo", "ue", "ey", "ay", "oy", "oi", "au", "aw"];
     let consonants = vec!["b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "n", "p", "q", "r", "s", "t", "v", "w", "x", "y", "z"];
     let vowels = vec!["a", "e", "i", "o", "u", "y"];
-    let length = rng.gen_range(0..15);
+    let length = rng.gen_range(3..10);
     let mut name = String::new();
+    let mut cat = 0;
+    let mut cons = true;
     for i in 0..length {
-        let cat = rng.gen_range(0..4);
         let mut list: &Vec<&str> = &Vec::new();
-        match cat {
-            0 => {list = &c_digraphs},
-            1 => {list = &v_digraphs},
-            2 => {list = &consonants},
-            3 => {list = &vowels},
-            _ => {}
+        if cons {
+            if name.len() == 0 {
+                name += consonants[rng.gen_range(0..consonants.len())];
+            } else {
+                cat = rng.gen_range(0..2);
+                match cat {
+                    0 => {list = &c_digraphs},
+                    1 => {list = &consonants},
+                    _ => {}
+                }
+                let index = list.len();
+                name += list[rng.gen_range(0..index)];
+            }
+        } else {
+            cat = rng.gen_range(0..2);
+            match cat {
+                0 => {list = &v_digraphs},
+                1 => {list = &vowels},
+                _ => {}
+            }
+            let index = list.len();
+            name += list[rng.gen_range(0..index)];
         }
-        let index = list.len();
-        name += list[rng.gen_range(0..index)];
+        cons = !cons;
     }
     name
 }
