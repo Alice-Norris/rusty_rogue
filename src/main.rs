@@ -1,40 +1,53 @@
-mod types;
-mod items;
+pub mod enums;
+pub mod types;
+pub mod data;
+pub mod file;
 
-use std::{io::{self, Write}, vec, fs, path::Path};
-use cursive::{views::{LinearLayout, Canvas, TextView}, theme::{Theme, Palette, ColorStyle}, view::Resizable, Printer, CursiveRunnable, XY};
+use std::{io::{self}, vec, fs, path::Path, collections::HashMap};
+use cursive::{views::{LinearLayout, Canvas, TextView, Panel}, theme::{Theme, Palette, ColorStyle}, view::Resizable, Printer, CursiveRunnable, XY, Cursive};
 use cursive::theme::BaseColor::{Black, White};
 use cursive::traits::Nameable;
 use cursive::theme::Color;
 use cursive::theme::PaletteColor::{Background, Primary, View};
-use items::create_item_data;
+use data::create_stuff;
 use rand::prelude::*;
-use types::Item;
+use types::{Item, GameState};
 use crate::types::Size;
-
+use crate::file::load_items;
 fn main() {
-    //let graphics: Vec<Box<String>> = load_graphics();
-    let mut siv = cursive::default();
-    // setup_window(&mut siv, &graphics);
-    let mut rng = rand::thread_rng();
-    for i in 0..50 {
-        let name = gen_name(&mut rng); 
-        println!("{name}");
+    
+    let mut item_map:HashMap<u16, Box<dyn Item>> = HashMap::new();
+    load_items(&mut item_map);
+    for item in item_map.into_iter() {
+        let item_box = item.1;
+        let item_name = item_box.get_name;
+        println!("x");
     }
-    let items = create_item_data();
+    //let item_name = item_1.get_name();
+    let state: GameState = GameState::new();
+    //let graphics: Vec<Box<String>> = load_graphics();
+    //let mut siv = cursive::default();
+    //setup_window(&mut siv, &graphics);
+    //write_to("output", &String::from("Welcome to The Hallway!"), &mut siv);
+    let mut rng = rand::thread_rng();
+    let items = create_stuff();
+    
+    // for i in 0..32 {
+    //     println!("{0}", gen_name(&mut rng));
+    // }
     let mut inventory: Vec<&Box<dyn Item>> = vec![];
     let mut state = String::from("standing in");
     let mut item_roll: Option<&Box<dyn Item>> = None;
-    loop {
-        println!("You are {0} a hallway...", state);
-        print!("Enter a command <z = get, c = continue, x = wait, q = quit>: ");
-        io::stdout().flush().unwrap();
-        let res = process_input(&mut state, item_roll, &mut inventory);
-        if res == 1 {
-            break;
-        }
-        item_roll = gen_item(&mut rng, &items);
-    }
+    // loop {
+    //     println!("You are {0} a hallway...", state);
+    //     print!("Enter a command <z = get, c = continue, x = wait, q = quit>: ");
+    //     io::stdout().flush().unwrap();
+    //     let res = process_input(&mut state, item_roll, &mut inventory);
+    //     if res == 1 {
+    //         break;
+    //     }
+    //     item_roll = gen_item(&mut rng, &items);
+    // }
 
     //siv.run();
 }
@@ -42,14 +55,19 @@ fn main() {
 pub fn load_graphics() -> Vec<Box<String>> {
     let g_path_str = String::from("./target/debug/gate.txt");
     let g_path = Path::new(&g_path_str);
-    let gate = fs::read_to_string(g_path).unwrap();
-    vec![Box::new(gate)]
+    let gate = fs::read_to_string(g_path);
+    if gate.is_ok() { 
+        vec![Box::new(gate.unwrap())]
+    } else {
+        vec![]
+    }
 
 }
+
 pub fn setup_window(siv: &mut CursiveRunnable, graphics: &Vec<Box<String>>) {
     siv.add_global_callback('q', |s| s.quit());
     //siv.on_event()
-    let gate = graphics[0].as_ref();
+    //let gate = graphics[0].as_ref();
     let mut palette = Palette::default();
     palette.extend(vec![(Background, Color::Dark(Black)), (View, Color::Dark(Black)), (Primary, Color::Light(White))]);
     
@@ -61,28 +79,35 @@ pub fn setup_window(siv: &mut CursiveRunnable, graphics: &Vec<Box<String>>) {
 
     siv.set_theme(theme);
 
-    siv.add_layer(LinearLayout::vertical()
-        .child(
-            Canvas::new(graphics[0].as_ref().clone())
-            .with_draw(|gate, p| {
-                let gate_vec = gate.split_terminator('\n').into_iter();
-                // let style = ColorStyle::new(Color::Rgb(000, 000, 000), Color::Rgb(255, 255, 255));
-                // p.with_color(style, |p| {p.print((0, 0), gate)});
-                for (index, line) in gate_vec.enumerate() {
-                    p.print((1, index), line);
-                }
-                
-            })
-            .with_name("room")
-            .fixed_size(XY::new(96, 26))
-        )
-        .child(
-            TextView::new(String::from("Test"))
-            .fixed_size((96, 5))
-        )
-    )
+    let info_panel = Panel::new(
+        TextView::new(String::new())
+        .with_name("info")
+        .fixed_size(XY::new(20, 30)));
+    
+    let room_panel = Panel::new(
+        Canvas::new(String::new()) 
+        .with_name("room")
+        .fixed_size(XY::new(96, 26))
+    );
+    
+    let output_panel = Panel::new(
+        TextView::new(String::new())
+        .with_name("output")
+        .fixed_size((96, 4))
+    );
+     
+    // let status_bar = TextView::new(String::from(""));
+
+    siv.add_layer(LinearLayout::horizontal().child(info_panel)
+        .child(LinearLayout::vertical()
+            .child(room_panel)
+            .child(output_panel))
+    );
 }
 
+pub fn new_game() {
+
+}
 
 pub fn gen_item<'a>(rng: &mut ThreadRng, items: &'a Vec<Box<dyn Item>>) -> Option<&'a Box<dyn Item>> {
     let chance:usize = rng.gen_range(1..10);
@@ -113,34 +138,30 @@ pub fn draw_room(room_str: &String, p: &Printer<'_, '_>) {
 }
 
 pub fn gen_name(rng: &mut ThreadRng) -> String {
-    let c_digraphs = vec!["sh", "kn", "ch", "ph", "wr", "ck", "ss", "tch", "th", "wh"];
-    let v_digraphs = vec!["ai", "ay", "ee", "ea", "ie", "ei", "oo", "ou", "ow", "oe", "oo", "ue", "ey", "ay", "oy", "oi", "au", "aw"];
-    let consonants = vec!["b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "n", "p", "q", "r", "s", "t", "v", "w", "x", "y", "z"];
-    let vowels = vec!["a", "e", "i", "o", "u", "y"];
+    let c_digraphs = vec!["sh", "kn", "ch", "ph", "wr", "ck", "ss", "tch", "th", "wh", "qu", "tr", "cr", "ly", "ry", "cy", "by"];
+    let v_digraphs = vec!["ai", "ay", "ee", "ea", "ie", "ei", "oo", "ou", "ow", "oe", "ue", "ey", "ay", "oy", "oi", "au", "aw"];
+    let consonants = vec!["b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "n", "p", "r", "s", "t", "v", "w", "x", "y", "z"];
+    let vowels = vec!["a", "e", "i", "o", "u"];
     let length = rng.gen_range(3..10);
     let mut name = String::new();
     let mut cat = 0;
-    let mut cons = true;
+    let mut cons: bool = rng.gen_bool(0.5);
+    let mut list: &Vec<&str> = &Vec::new();
     for i in 0..length {
-        let mut list: &Vec<&str> = &Vec::new();
         if cons {
-            if name.len() == 0 {
-                name += consonants[rng.gen_range(0..consonants.len())];
-            } else {
-                cat = rng.gen_range(0..2);
-                match cat {
-                    0 => {list = &c_digraphs},
-                    1 => {list = &consonants},
-                    _ => {}
-                }
-                let index = list.len();
-                name += list[rng.gen_range(0..index)];
-            }
-        } else {
-            cat = rng.gen_range(0..2);
+            cat = rng.gen_range(0..5);
             match cat {
-                0 => {list = &v_digraphs},
-                1 => {list = &vowels},
+                0 | 1 | 2| 3 => {list = &consonants},
+                4 => {list = &c_digraphs},
+                _ => {}
+            }
+            let index = list.len();
+            name += list[rng.gen_range(0..index)];
+        } else {
+            cat = rng.gen_range(0..7);
+            match cat {
+                0 | 1 | 2| 3 | 4 | 5 => {list = &vowels},
+                6 => {list = &v_digraphs},
                 _ => {}
             }
             let index = list.len();
@@ -148,6 +169,7 @@ pub fn gen_name(rng: &mut ThreadRng) -> String {
         }
         cons = !cons;
     }
+    
     name
 }
 
@@ -216,4 +238,14 @@ pub fn we_quit<'a>(inv: &mut Vec<&'a Box<dyn Item>>) {
             println!("{0}", thing.as_ref().get_name());
         }
     }
+}
+
+pub fn write_to(view_name: &str, output: &String, siv: &mut Cursive) {
+    siv.call_on_name(view_name, |v: &mut TextView| {
+        v.set_content(output);
+    });
+}
+
+pub fn load_text() {
+    
 }
