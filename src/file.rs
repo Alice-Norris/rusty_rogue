@@ -26,13 +26,7 @@ fn parse_items(table_str: String, item_map: &mut HashMap<u16, Box<dyn Item>>) {
     let l_index = l_braces[i].0;
     let r_index = r_braces[i].0;
     let item_str: String = String::from(item_str.get(l_index..r_index).unwrap().trim_matches(|c| c == '{' || c == '}'));
-    let new_item = match RItem::any_item(item_type_str.trim(), item_str) {
-      Ok(item) => item,
-      Err(_) => {
-        println!("Could not parse item!");
-        break
-      }
-    };
+    let new_item = RItem::new(0, String::from("test"), RItemType::Stuff);
     item_map.insert(i as u16, new_item);
   }
 }

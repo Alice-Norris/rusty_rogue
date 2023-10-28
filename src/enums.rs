@@ -7,6 +7,7 @@ pub enum RItemType {
   Weapon,
   Armor,
 }
+
 impl TryFrom<&str> for RItemType {
   type Error = String;
 

@@ -12,7 +12,6 @@ use cursive::theme::PaletteColor::{Background, Primary, View};
 use data::create_stuff;
 use rand::prelude::*;
 use types::{Item, GameState};
-use crate::types::Size;
 use crate::file::load_items;
 fn main() {
     
@@ -20,7 +19,7 @@ fn main() {
     load_items(&mut item_map);
     for item in item_map.into_iter() {
         let item_box = item.1;
-        let item_name = item_box.get_name;
+        let item_name = item_box.get_name();
         println!("x");
     }
     //let item_name = item_1.get_name();
@@ -127,9 +126,9 @@ pub fn draw_room(room_str: &String, p: &Printer<'_, '_>) {
         Color::Rgb(0, 0, 0)
     );
     p.print_box((0, 0), p.size, false);
-    let sz: Size = Size::new(p.size.x, p.size.y);
-    for x in 1..sz.x-1 {
-        for y in 1..sz.y-1 {
+    let sz = (p.size.x, p.size.y);
+    for x in 1..sz.0-1 {
+        for y in 1..sz.1-1 {
             p.with_color(style, |printer| {
                 printer.print((x, y), ".");
             })
@@ -173,9 +172,9 @@ pub fn gen_name(rng: &mut ThreadRng) -> String {
     name
 }
 
-pub fn gen_room(rng: &mut ThreadRng) {
-    let size: Size = Size::new(rng.gen_range(3..13), rng.gen_range(3..13));
-}
+// pub fn gen_room(rng: &mut ThreadRng) {
+//     let size: Size = Size::new(rng.gen_range(3..13), rng.gen_range(3..13));
+// }
 
 pub fn process_input<'a>(mut state: &mut String, item_roll: Option<&'a Box<dyn Item>>, inv: &mut Vec<&'a Box<dyn Item>>) -> u8{
     let mut input = String::new();
